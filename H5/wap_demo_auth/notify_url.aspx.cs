@@ -1,0 +1,91 @@
+﻿using System;
+using System.Data;
+using System.Configuration;
+using System.Collections;
+using System.Web;
+using System.Web.Security;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Web.UI.WebControls.WebParts;
+using System.Web.UI.HtmlControls;
+using System.Collections.Specialized;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using Newtonsoft.Json;
+using LLYTPay;
+
+/// <summary>
+/// 功能：服务器异步通知页面
+/// 说明：
+/// 以下代码只是为了方便商户测试而提供的样例代码，商户可以根据自己网站的需要，按照技术文档编写,并非一定要使用该代码。
+/// ///////////////////页面功能说明///////////////////
+/// 创建该页面文件时，请留心该页面文件中无任何HTML代码及空格。
+/// 该页面不能在本机电脑测试，请到服务器上做测试。请确保外部可以访问该页面。
+
+/// </summary>
+public partial class notify_url : System.Web.UI.Page
+{
+    protected void Page_Load(object sender, EventArgs e)
+    {
+
+
+        SortedDictionary<string, string> sPara = GetRequestPost();
+
+
+        if (sPara != null && sPara.Count > 0)//判断是否有带返回参数
+        {
+
+			Console.WriteLine("接收支付异步通知数据：【" + sPara.ToString() + "】");
+
+            if (!YinTongUtil.checkSign(sPara, PartnerConfig.YT_PUB_KEY, //验证失败
+                PartnerConfig.MD5_KEY))
+            {
+                Response.Write(@"{""ret_code"":""9999"",""ret_msg"":""验签失败""}");
+                Console.WriteLine("支付异步通知验签失败");
+                return;
+            }
+            else
+            {
+                Response.Write(@"{""ret_code"":""0000"",""ret_msg"":""交易成功""}");
+                Console.WriteLine("交易成功");
+                }
+        }
+        else
+        {
+            Response.Write(@"{""ret_code"":""9999"",""ret_msg"":""交易失败""}");
+        }
+
+		// 解析异步通知对象
+		// sPara 字典对象
+		// TODO:更新订单，发货等后续处理
+
+    }
+
+    /// <summary>
+	/// 获取POST过来通知消息，并以“参数名=参数值”的形式组成字典
+    /// </summary>
+    /// <returns>request回来的信息组成的数组</returns>
+    public SortedDictionary<string, string> GetRequestPost()
+    {
+        string reqStr = readReqStr();
+
+        SortedDictionary<string, string> sArray = JsonConvert.DeserializeObject<SortedDictionary<string, string>>(reqStr);
+        return sArray;
+    }
+
+
+	//从request中读取流，组成字符串返回
+    public String readReqStr()
+    {
+
+        byte[] byts = new byte[Request.InputStream.Length];
+        Request.InputStream.Read(byts, 0, byts.Length);
+        string req = System.Text.Encoding.Default.GetString(byts);
+        Console.WriteLine("req =" + req);
+        return req;
+    }
+
+}
+
+
